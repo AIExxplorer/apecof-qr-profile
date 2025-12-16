@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "public": false,
+  "buildCommand": "echo 'Static files only'",
+  "outputDirectory": ".",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
