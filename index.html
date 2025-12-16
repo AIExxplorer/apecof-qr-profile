@@ -5,23 +5,205 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APECOF QR Redirect</title>
     <style>
-        body { font-family: system-ui; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; max-width: 400px; text-align: center; }
-        .spinner { border: 3px solid #f0f0f0; border-top: 3px solid #667eea; border-radius: 50%; width: 45px; height: 45px; margin: 20px auto; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background iframe container */
+        #iframe-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            pointer-events: none;
+        }
+
+        #iframe-container.loaded {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #apecof-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Loading container */
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 400px;
+            text-align: center;
+            z-index: 10;
+            position: relative;
+        }
+
+        .spinner {
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            margin: 20px auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        p {
+            color: #333;
+            font-size: 16px;
+        }
+
+        .status {
+            color: #667eea;
+            font-size: 14px;
+            margin-top: 10px;
+            min-height: 20px;
+        }
     </style>
 </head>
 <body>
+    <div id="iframe-container">
+        <iframe id="apecof-iframe" src="https://sistema.apecof.org.br/mapa"></iframe>
+    </div>
+
     <div class="container">
         <div class="spinner"></div>
-        <p>Carregando...</p>
+        <p>Carregando seu perfil...</p>
+        <p class="status">Conectando ao APECOF</p>
     </div>
+
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const name = params.get('name') || 'Wagner Rafael Assunção Pereira';
-        const state = params.get('state') || 'MG';
-        const url = 'https://sistema.apecof.org.br/mapa?name=' + encodeURIComponent(name) + '&state=' + state + '&auto=1';
-        window.location.href = url;
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const nameParam = urlParams.get('name');
+        const stateParam = urlParams.get('state');
+
+        // Get iframe reference
+        const iframe = document.getElementById('apecof-iframe');
+        const iframeContainer = document.getElementById('iframe-container');
+        const statusEl = document.querySelector('.status');
+
+        // State mapping
+        const stateMap = {
+            'AC': 'Acre', 'AL': 'Alagoas', 'AP': 'Amapá', 'AM': 'Amazonas', 'BA': 'Bahia',
+            'CE': 'Ceará', 'DF': 'Distrito Federal', 'ES': 'Espírito Santo', 'GO': 'Goiás',
+            'MA': 'Maranhão', 'MT': 'Mato Grosso', 'MS': 'Mato Grosso do Sul', 'MG': 'Minas Gerais',
+            'PA': 'Pará', 'PB': 'Paraíba', 'PR': 'Paraná', 'PE': 'Pernambuco', 'PI': 'Piauí',
+            'RJ': 'Rio de Janeiro', 'RN': 'Rio Grande do Norte', 'RS': 'Rio Grande do Sul',
+            'RO': 'Rondônia', 'RR': 'Roraima', 'SC': 'Santa Catarina', 'SP': 'São Paulo',
+            'SE': 'Sergipe', 'TO': 'Tocantins'
+        };
+
+        // Default values
+        const name = nameParam || 'Wagner Rafael Assunção Pereira';
+        const stateName = stateParam ? (stateMap[stateParam.toUpperCase()] || 'Minas Gerais') : 'Minas Gerais';
+
+        console.log('[APECOF-QR] Loading with:', { name, stateName });
+
+        // Wait for iframe to load
+        iframe.onload = function() {
+            console.log('[APECOF-QR] iframe loaded');
+            statusEl.textContent = 'Preenchendo formulário...';
+            
+            setTimeout(() => {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    
+                    // Find form elements
+                    const stateSelect = iframeDoc.querySelector('select');
+                    const nameInput = iframeDoc.querySelector('input[placeholder*="nome"]') || 
+                                     iframeDoc.querySelector('input[placeholder*="Nome"]') ||
+                                     Array.from(iframeDoc.querySelectorAll('input')).find(el => 
+                                         el.placeholder && el.placeholder.toLowerCase().includes('nome')
+                                     );
+                    const searchBtn = Array.from(iframeDoc.querySelectorAll('button')).find(el =>
+                        el.textContent && el.textContent.toLowerCase().includes('buscar')
+                    );
+
+                    if (stateSelect) {
+                        stateSelect.value = stateName;
+                        stateSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        console.log('[APECOF-QR] State set to:', stateName);
+                    }
+
+                    if (nameInput) {
+                        nameInput.focus();
+                        nameInput.value = name;
+                        nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        console.log('[APECOF-QR] Name filled:', name);
+                    }
+
+                    // Submit search
+                    setTimeout(() => {
+                        if (searchBtn) {
+                            statusEl.textContent = 'Realizando busca...';
+                            searchBtn.click();
+                            console.log('[APECOF-QR] Search submitted');
+                            
+                            // Show iframe after a short delay
+                            setTimeout(() => {
+                                statusEl.textContent = 'Exibindo resultados...';
+                                iframeContainer.classList.add('loaded');
+                            }, 800);
+                        } else {
+                            console.warn('[APECOF-QR] Search button not found');
+                            iframeContainer.classList.add('loaded');
+                        }
+                    }, 300);
+                } catch (error) {
+                    console.error('[APECOF-QR] Error:', error.message);
+                    console.log('[APECOF-QR] Cross-origin iframe detected, showing results anyway');
+                    // Still show the iframe
+                    iframeContainer.classList.add('loaded');
+                }
+            }, 500);
+        };
+
+        iframe.onerror = function() {
+            console.error('[APECOF-QR] iframe failed to load');
+            statusEl.textContent = 'Erro ao carregar. Redirecionando...';
+            // Fallback: redirect after 2 seconds
+            setTimeout(() => {
+                const url = 'https://sistema.apecof.org.br/mapa?name=' + encodeURIComponent(name) + '&state=' + stateParam;
+                window.location.href = url;
+            }, 2000);
+        };
+
+        // Fallback timeout - if iframe doesn't load within 5 seconds, show it anyway
+        setTimeout(() => {
+            if (!iframeContainer.classList.contains('loaded')) {
+                console.log('[APECOF-QR] Timeout reached, showing iframe');
+                statusEl.textContent = 'Exibindo página...';
+                iframeContainer.classList.add('loaded');
+            }
+        }, 5000);
     </script>
 </body>
 </html>
