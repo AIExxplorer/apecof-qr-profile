@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Redirect APECOF QR</title>
+    <title>APECOF QR Redirect</title>
     <style>
         body { font-family: system-ui; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { background: white; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); padding: 40px; max-width: 400px; text-align: center; }
@@ -15,17 +14,14 @@
 <body>
     <div class="container">
         <div class="spinner"></div>
-        <p>Carregando perfil...</p>
+        <p>Carregando...</p>
     </div>
     <script>
-        (function() {
-            const params = new URLSearchParams(window.location.search);
-            const name = params.get('name') || 'Wagner Rafael Assunção Pereira';
-            const state = params.get('state') || 'MG';
-            const url = 'https://sistema.apecof.org.br/mapa?name=' + encodeURIComponent(name) + '&state=' + state + '&auto=1';
-            setTimeout(() => { window.location.href = url; }, 500);
-        })();
+        const params = new URLSearchParams(window.location.search);
+        const name = params.get('name') || 'Wagner Rafael Assunção Pereira';
+        const state = params.get('state') || 'MG';
+        const url = 'https://sistema.apecof.org.br/mapa?name=' + encodeURIComponent(name) + '&state=' + state + '&auto=1';
+        window.location.href = url;
     </script>
-    <script async src="https://cdn.jsdelivr.net/gh/AIExxplorer/apecof-qr-profile@main/macro.js"></script>
 </body>
 </html>
