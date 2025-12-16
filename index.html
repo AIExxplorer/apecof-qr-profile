@@ -15,14 +15,17 @@
 <body>
     <div class="container">
         <div class="spinner"></div>
-        <p>Carregando...</p>
+        <p>Carregando perfil...</p>
     </div>
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const name = params.get('name') || 'Wagner Rafael Assunção Pereira';
-        const state = params.get('state') || 'MG';
-        const url = 'https://sistema.apecof.org.br/mapa?name=' + encodeURIComponent(name) + '&state=' + state + '&auto=1';
-        window.location.href = url;
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const name = params.get('name') || 'Wagner Rafael Assunção Pereira';
+            const state = params.get('state') || 'MG';
+            const url = 'https://sistema.apecof.org.br/mapa?name=' + encodeURIComponent(name) + '&state=' + state + '&auto=1';
+            setTimeout(() => { window.location.href = url; }, 500);
+        })();
     </script>
+    <script async src="https://cdn.jsdelivr.net/gh/AIExxplorer/apecof-qr-profile@main/macro.js"></script>
 </body>
 </html>
