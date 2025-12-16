@@ -12,8 +12,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-            'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             justify-content: center;
@@ -47,33 +46,26 @@
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .message {
+        .status-text {
             color: #666;
-            font-size: 18px;
-            font-weight: 500;
-        }
-        .info {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
             font-size: 14px;
-            color: #999;
+            margin-top: 10px;
         }
-        .status {
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 8px;
             margin-top: 15px;
-            padding: 10px;
-            font-size: 12px;
-            color: #667eea;
-            background: #f0f4ff;
-            border-radius: 6px;
+            display: none;
         }
     </style>
 </head>
@@ -82,153 +74,102 @@
         <div class="logo">🔍 APECOF</div>
         <div class="loading">
             <div class="spinner"></div>
-            <div class="message" id="mainMessage">Carregando seu perfil...</div>
+            <div class="status-text" id="status">Redirecionando...</div>
         </div>
-        <div class="info">
-            <p>Você será redirecionado para a Lista de Associados</p>
-            <div class="status" id="status">Inicializando...</div>
-        </div>
+        <div class="error" id="error"></div>
     </div>
 
     <script>
-        // Configuração do perfil
-        const PROFILE = {
-            name: 'Wagner Rafael Assunção Pereira',
-            state: 'Minas Gerais',
-            stateCode: 'MG',
-            apiUrl: 'https://sistema.apecof.org.br'
+        // Configuration
+        const CONFIG = {
+            TARGET_URL: 'https://sistema.apecof.org.br/mapa',
+            ASSOCIATE_NAME: 'Wagner Rafael Assunção Pereira',
+            STATE: 'MG'
         };
 
-        // Função auxiliar para atualizar status
-        function updateStatus(message) {
-            const statusEl = document.getElementById('status');
-            if (statusEl) {
-                statusEl.textContent = message;
-            }
-            console.log('[APECOF-QR]', message);
+        // Save data to sessionStorage for cross-domain communication
+        function saveAutomationData() {
+            const automationData = {
+                name: CONFIG.ASSOCIATE_NAME,
+                state: CONFIG.STATE,
+                timestamp: Date.now(),
+                enabled: true
+            };
+            sessionStorage.setItem('apecof_automation', JSON.stringify(automationData));
+            console.log('[APECOF-QR] Data saved:', automationData);
         }
 
-        // Inicia o processo quando a página carrega
-        window.addEventListener('load', function() {
-            updateStatus('✓ Página carregada. Iniciando redirecionamento...');
-            setTimeout(() => {
-                redirectToAPECOF();
-            }, 500);
-        });
-
-        // Função principal de redirecionamento
-        function redirectToAPECOF() {
-            try {
-                updateStatus('→ Redirecionando para APECOF...');
-                const encodedName = encodeURIComponent(PROFILE.name);
-                const targetUrl = `${PROFILE.apiUrl}/mapa?name=${encodedName}`;
-                
-                // Redireciona com JavaScript
-                window.location.href = targetUrl;
-                
-                // Iniciar monitoramento após redirecionamento
-                setTimeout(() => {
-                    beginAutoFillProcess();
-                }, 1000);
-            } catch (error) {
-                updateStatus('✗ Erro ao redirecionar: ' + error.message);
-                console.error('[APECOF-QR] Erro:', error);
-            }
-        }
-
-        // Inicia o processo de preenchimento automático
-        function beginAutoFillProcess() {
-            updateStatus('↻ Preenchendo formulário automaticamente...');
-            
-            // Aguardar até 15 segundos pela página estar pronta
-            let tentativas = 0;
-            const maxTentativas = 30; // 30 tentativas × 500ms = 15 segundos
-            
-            const intervalo = setInterval(() => {
-                tentativas++;
-                
-                if (tentativas > maxTentativas) {
-                    updateStatus('✗ Tempo limite excedido');
-                    clearInterval(intervalo);
-                    return;
+        // Inject script that will run on APECOF domain
+        function injectAutomationScript() {
+            // This will be executed directly on APECOF via Tampermonkey/userscript
+            const script = `
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', automateForm);
+                } else {
+                    automateForm();
                 }
-
-                try {
-                    // 1. PREENCHER ESTADO (Minas Gerais)
-                    const selectElements = document.querySelectorAll('select');
-                    let estadoPreenchido = false;
-
-                    for (let select of selectElements) {
-                        const options = select.querySelectorAll('option');
-                        for (let option of options) {
-                            if (option.textContent.trim() === 'Minas Gerais') {
-                                select.value = option.value;
-                                // Disparar eventos para JavaScript frameworks detectarem mudança
-                                select.dispatchEvent(new Event('change', { bubbles: true }));
-                                select.dispatchEvent(new Event('input', { bubbles: true }));
-                                select.dispatchEvent(new Event('blur', { bubbles: true }));
-                                estadoPreenchido = true;
-                                updateStatus('✓ Estado (MG) selecionado');
-                                break;
-                            }
-                        }
-                        if (estadoPreenchido) break;
-                    }
-
-                    // 2. PREENCHER NOME DO ASSOCIADO
-                    const inputElements = document.querySelectorAll('input[type="text"]');
-                    let nomePreenchido = false;
-
-                    for (let input of inputElements) {
-                        const placeholder = input.placeholder || '';
-                        const ariaLabel = input.getAttribute('aria-label') || '';
+                setTimeout(automateForm, 1000);
+                
+                function automateForm() {
+                    try {
+                        let data = JSON.parse(sessionStorage.getItem('apecof_automation'));
+                        if (!data || !data.enabled) return;
                         
-                        if (placeholder.includes('Digite') || placeholder.includes('nome') ||
-                            ariaLabel.includes('nome') || ariaLabel.includes('associado')) {
-                            input.value = PROFILE.name;
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
-                            input.dispatchEvent(new Event('blur', { bubbles: true }));
-                            nomePreenchido = true;
-                            updateStatus('✓ Nome preenchido');
-                            break;
+                        // Find state select
+                        let stateSelect = document.querySelector('select');
+                        if (stateSelect) {
+                            stateSelect.value = data.state;
+                            stateSelect.dispatchEvent(new Event('change', { bubbles: true }));
                         }
+                        
+                        // Find name input
+                        let nameInput = Array.from(document.querySelectorAll('input')).find(el => 
+                            el.placeholder && el.placeholder.toLowerCase().includes('nome')
+                        );
+                        if (!nameInput) {
+                            nameInput = document.querySelector('input[type=\"text\"]');
+                        }
+                        
+                        if (nameInput) {
+                            nameInput.focus();
+                            nameInput.value = data.name;
+                            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        // Click search button
+                        setTimeout(() => {
+                            let searchBtn = Array.from(document.querySelectorAll('button')).find(el => 
+                                el.textContent.toLowerCase().includes('buscar')
+                            );
+                            if (searchBtn) searchBtn.click();
+                        }, 300);
+                    } catch(e) {
+                        console.error('[APECOF-QR] Error:', e);
                     }
-
-                    // 3. CLICAR NO BOTÃO BUSCAR
-                    if (estadoPreenchido && nomePreenchido) {
-                        let botaoBuscar = null;
-
-                        // Tentar encontrar o botão por ID
-                        botaoBuscar = document.getElementById('button-addon2');
-
-                        // Se não encontrar por ID, tentar por atributo onclick ou classe
-                        if (!botaoBuscar) {
-                            const buttons = document.querySelectorAll('button');
-                            for (let btn of buttons) {
-                                if (btn.textContent.trim().toLowerCase() === 'buscar') {
-                                    botaoBuscar = btn;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (botaoBuscar) {
-                            // Adicionar delay mínimo para garantir que os campos estão preenchidos
-                            setTimeout(() => {
-                                botaoBuscar.click();
-                                updateStatus('✓ Botão "Buscar" clicado!');
-                                updateStatus('✓ Modal com dados deve aparecer...');
-                                clearInterval(intervalo);
-                            }, 200);
-                        } else {
-                            console.log('[APECOF-QR] Botão ainda não encontrado');
-                        }
-                    }
-                } catch (error) {
-                    console.log('[APECOF-QR] Tentativa ' + tentativas + ' - Erro:', error.message);
                 }
+            `;
+            sessionStorage.setItem('apecof_userscript', script);
+        }
+
+        // Redirect to APECOF
+        function redirectToAPECOF() {
+            saveAutomationData();
+            injectAutomationScript();
+            document.getElementById('status').textContent = 'Conectando ao APECOF...';
+            
+            setTimeout(() => {
+                const url = CONFIG.TARGET_URL + '?name=' + encodeURIComponent(CONFIG.ASSOCIATE_NAME);
+                console.log('[APECOF-QR] Redirecting to:', url);
+                window.location.href = url;
             }, 500);
+        }
+
+        // Initialize
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', redirectToAPECOF);
+        } else {
+            redirectToAPECOF();
         }
     </script>
 </body>
