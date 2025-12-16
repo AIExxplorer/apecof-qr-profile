@@ -63,6 +63,16 @@
             
             // Lê dados
             let name = 'Wagner Rafael Assunção Pereira';
+
+                        // Tentar ler tambem dos URL parameters como fallback
+            if (!name) {
+                const params = new URLSearchParams(window.location.search);
+                name = params.get('name') || name;
+            }
+            if (!state) {
+                const params = new URLSearchParams(window.location.search);
+                state = params.get('state') || state;
+            }
             let state = 'MG';
             
             // Tenta ler do localStorage se disponível
