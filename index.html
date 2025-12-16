@@ -102,7 +102,7 @@
         window.addEventListener('load', function() {
             setTimeout(() => {
                 redirectAndSearch();
-            }, 1000);
+            }, 800);
         });
 
         async function redirectAndSearch() {
@@ -114,52 +114,101 @@
                 // Redireciona para o sistema APECOF
                 window.location.href = targetUrl;
                 
-                // Aguarda um tempo e tenta executar o clique automaticamente
+                // Aguarda para a página carregar e então preenc he os campos
                 setTimeout(() => {
-                    try {
-                        // Seleciona o dropdown de estado
-                        const stateSelect = document.querySelector('select') || document.querySelector('[aria-haspopup="menu"]');
-                        if (stateSelect) {
-                            stateSelect.value = PROFILE.state;
-                            stateSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                        
-                        // Seleciona o input de nome
-                        const inputs = document.querySelectorAll('input[type="text"]');
-                        let nameInput = null;
-                        for (let input of inputs) {
-                            if (input.placeholder && input.placeholder.includes('Digite')) {
-                                nameInput = input;
-                                break;
-                            }
-                        }
-                        
-                        if (nameInput) {
-                            nameInput.value = PROFILE.name;
-                            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            nameInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                        
-                        // Aguarda um pouco mais e clica no botão Buscar
-                        setTimeout(() => {
-                            const searchButton = document.getElementById('button-addon2') || 
-                                              document.querySelector('button[id*="button"]') ||
-                                              Array.from(document.querySelectorAll('button')).find(btn => btn.textContent.includes('Buscar'));
-                            
-                            if (searchButton) {
-                                searchButton.click();
-                            }
-                        }, 500);
-                        
-                    } catch (error) {
-                        console.log('Erro ao executar a busca automaticamente:', error);
-                    }
-                }, 2000);
+                    preencherEBuscar();
+                }, 2500);
 
             } catch (error) {
                 console.error('Erro ao redirecionar:', error);
                 // Fallback direto
                 window.location.href = `${PROFILE.apiUrl}/mapa?name=${encodeURIComponent(PROFILE.name)}`;
+            }
+        }
+
+        function preencherEBuscar() {
+            try {
+                console.log('Tentando preencher os campos...');
+                
+                // Aguarda um pouco mais para o documento estar totalmente pronto
+                if (document.readyState !== 'complete') {
+                    setTimeout(preencherEBuscar, 500);
+                    return;
+                }
+                
+                let preenchidoComSucesso = false;
+                
+                // Tenta máximo de 10 vezes
+                let tentativas = 0;
+                const maxTentativas = 10;
+                
+                const intervalo = setInterval(() => {
+                    tentativas++;
+                    
+                    // 1. Tenta preencher o estado
+                    try {
+                        const selects = document.querySelectorAll('select');
+                        let estadoPreenchido = false;
+                        
+                        for (let select of selects) {
+                            // Procura pela opção Minas Gerais
+                            const opcoes = select.querySelectorAll('option');
+                            for (let opcao of opcoes) {
+                                if (opcao.textContent.includes('Minas Gerais')) {
+                                    select.value = opcao.value;
+                                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                                    console.log('Estado preenchido:', opcao.value);
+                                    estadoPreenchido = true;
+                                    break;
+                                }
+                            }
+                            if (estadoPreenchido) break;
+                        }
+                    } catch (e) {
+                        console.log('Erro ao preencher estado:', e);
+                    }
+                    
+                    // 2. Tenta preencher o nome
+                    try {
+                        const inputs = document.querySelectorAll('input[type="text"]');
+                        let nomePreenchido = false;
+                        
+                        for (let input of inputs) {
+                            if (input.placeholder && (input.placeholder.includes('Digite') || input.placeholder.includes('nome'))) {
+                                input.value = PROFILE.name;
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                                console.log('Nome preenchido');
+                                nomePreenchido = true;
+                                preenchidoComSucesso = true;
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Erro ao preencher nome:', e);
+                    }
+                    
+                    // 3. Tenta clicar no botão Buscar
+                    try {
+                        const botaoBuscar = document.getElementById('button-addon2') ||
+                                          document.querySelector('button[id*="button"]') ||
+                                          Array.from(document.querySelectorAll('button')).find(btn => btn.textContent.trim() === 'Buscar');
+                        
+                        if (botaoBuscar && preenchidoComSucesso) {
+                            botaoBuscar.click();
+                            console.log('Botão Buscar clicado com sucesso');
+                            clearInterval(intervalo);
+                        } else if (tentativas >= maxTentativas) {
+                            console.log('Máximo de tentativas atingido');
+                            clearInterval(intervalo);
+                        }
+                    } catch (e) {
+                        console.log('Erro ao clicar no botão:', e);
+                    }
+                }, 300);
+                
+            } catch (error) {
+                console.error('Erro ao preencher e buscar:', error);
             }
         }
     </script>
