@@ -93,7 +93,8 @@
         // Dados do associado
         const PROFILE = {
             name: 'Wagner Rafael Assunção Pereira',
-            state: 'MG',
+            state: 'Minas Gerais',
+            stateCode: 'MG',
             apiUrl: 'https://sistema.apecof.org.br'
         };
 
@@ -110,26 +111,48 @@
                 const encodedName = encodeURIComponent(PROFILE.name);
                 const targetUrl = `${PROFILE.apiUrl}/mapa?name=${encodedName}`;
                 
-                // Abre em nova guia
-                const newWindow = window.open(targetUrl, '_self');
+                // Redireciona para o sistema APECOF
+                window.location.href = targetUrl;
                 
-                // Aguarda carregamento e executa clique no botão
+                // Aguarda um tempo e tenta executar o clique automaticamente
                 setTimeout(() => {
-                    // Tenta múltiplas formas de executar o clique
-                    const button = document.getElementById('button-addon2');
-                    if (button) {
-                        button.click();
-                    } else {
-                        // Fallback: simula enter no input
-                        const input = document.querySelector('input[placeholder*="Digite"]');
-                        if (input) {
-                            const event = new KeyboardEvent('keydown', {
-                                key: 'Enter',
-                                code: 'Enter',
-                                keyCode: 13
-                            });
-                            input.dispatchEvent(event);
+                    try {
+                        // Seleciona o dropdown de estado
+                        const stateSelect = document.querySelector('select') || document.querySelector('[aria-haspopup="menu"]');
+                        if (stateSelect) {
+                            stateSelect.value = PROFILE.state;
+                            stateSelect.dispatchEvent(new Event('change', { bubbles: true }));
                         }
+                        
+                        // Seleciona o input de nome
+                        const inputs = document.querySelectorAll('input[type="text"]');
+                        let nameInput = null;
+                        for (let input of inputs) {
+                            if (input.placeholder && input.placeholder.includes('Digite')) {
+                                nameInput = input;
+                                break;
+                            }
+                        }
+                        
+                        if (nameInput) {
+                            nameInput.value = PROFILE.name;
+                            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            nameInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        // Aguarda um pouco mais e clica no botão Buscar
+                        setTimeout(() => {
+                            const searchButton = document.getElementById('button-addon2') || 
+                                              document.querySelector('button[id*="button"]') ||
+                                              Array.from(document.querySelectorAll('button')).find(btn => btn.textContent.includes('Buscar'));
+                            
+                            if (searchButton) {
+                                searchButton.click();
+                            }
+                        }, 500);
+                        
+                    } catch (error) {
+                        console.log('Erro ao executar a busca automaticamente:', error);
                     }
                 }, 2000);
 
