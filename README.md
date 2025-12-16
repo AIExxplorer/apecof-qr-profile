@@ -76,3 +76,7 @@ Para issues ou dúvidas, abra uma issue neste repositório.
 ## Licença
 
 MIT
+
+---
+
+**Status de Deploy**: ✅ Vercel atualizado com macros de automação para mobile (Dezembro 16, 2025)
