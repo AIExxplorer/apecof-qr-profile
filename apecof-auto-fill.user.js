@@ -15,6 +15,19 @@
     // Get name parameter from URL
     const urlParams = new URLSearchParams(window.location.search);
     const nameParam = urlParams.get('name');
+     const stateParam = urlParams.get('state');
+     
+ // Map state codes to full names
+ const stateMap = {
+   'AC': 'Acre', 'AL': 'Alagoas', 'AP': 'Amapá', 'AM': 'Amazonas', 'BA': 'Bahia',
+   'CE': 'Ceará', 'DF': 'Distrito Federal', 'ES': 'Espírito Santo', 'GO': 'Goiás',
+   'MA': 'Maranhão', 'MT': 'Mato Grosso', 'MS': 'Mato Grosso do Sul', 'MG': 'Minas Gerais',
+   'PA': 'Pará', 'PB': 'Paraíba', 'PR': 'Paraná', 'PE': 'Pernambuco', 'PI': 'Piauí',
+   'RJ': 'Rio de Janeiro', 'RN': 'Rio Grande do Norte', 'RS': 'Rio Grande do Sul',
+   'RO': 'Rondônia', 'RR': 'Roraima', 'SC': 'Santa Catarina', 'SP': 'São Paulo',
+   'SE': 'Sergipe', 'TO': 'Tocantins'
+ };
+ const stateName = stateParam ? (stateMap[stateParam.toUpperCase()] || 'Minas Gerais') : 'Minas Gerais';
     
     if (!nameParam) {
         console.log('[APECOF-QR] No name parameter found in URL');
@@ -30,10 +43,9 @@
             const stateSelect = document.querySelector('select');
             if (stateSelect) {
                 // Try to set MG value
-                stateSelect.value = 'MG';
-                // Dispatch change event
+stateSelect.value = stateName;                // Dispatch change event
                 stateSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log('[APECOF-QR] State set to MG');
+console.log('[APECOF-QR] State set to ' + stateName);
             } else {
                 console.warn('[APECOF-QR] State select not found');
             }
